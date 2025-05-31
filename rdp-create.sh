@@ -38,10 +38,28 @@ REGIONS=("us-central1" "us-east1" "us-west1" "us-east4" "us-west2" "us-west3" "u
 # Instance config
 INSTANCE_COUNT=3
 MACHINE_TYPE="e2-standard-4"
-IMAGE_NAME="windows-server-2019-dc-v20250213"
-IMAGE_PROJECT="windows-cloud"
 DISK_SIZE="50"
 DISK_TYPE="pd-ssd"
+
+# Detect the latest Windows Server Desktop image (excluding core)
+echo -e "${CYAN}🔍 Fetching the latest Windows Server Desktop image...${NC}"
+LATEST_IMAGE=$(gcloud compute images list \
+  --project=windows-cloud \
+  --no-standard-images \
+  --filter="name~'windows-server.*-dc-v.*' AND NOT name~'core'" \
+  --sort-by=~creationTimestamp \
+  --format="value(name)" \
+  | head -n 1)
+
+if [[ -z "$LATEST_IMAGE" ]]; then
+  echo -e "${RED}✖ Could not fetch latest image. Using fallback: windows-server-2022-dc-v20250514${NC}"
+  IMAGE_NAME="windows-server-2022-dc-v20250514"
+else
+  IMAGE_NAME="$LATEST_IMAGE"
+  echo -e "${GREEN}✔ Using latest image: ${YELLOW}${IMAGE_NAME}${NC}"
+fi
+
+IMAGE_PROJECT="windows-cloud"
 
 # Create instance function
 create_instance() {
